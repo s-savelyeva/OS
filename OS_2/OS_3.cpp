@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #include <iostream>
 #include <cmath>
 #include <time.h>
@@ -28,11 +28,12 @@ DWORD WINAPI calculate_area(LPVOID param) {
     // Вычисление площади методом прямоугольников (средних)
     for (int i = 0; i < params->m; i++) {
         double x = params->a + (i + 0.5) * dx;  // метод среднего прямоугольника
-        EnterCriticalSection(&cs);
-        total_area += f(x) * dx;
-        LeaveCriticalSection(&cs);
-
+        local_sum += f(x) * dx;
     }
+
+    EnterCriticalSection(&cs);
+    total_area += local_sum;
+    LeaveCriticalSection(&cs);
 
     return 0;
 }
@@ -43,8 +44,8 @@ int main() {
     // Параметры задачи
     const double a = 0.0;      // левая граница отрезка
     const double b = 2.0;      // правая граница отрезка
-    const int n = 10;          // количество элементов разбиения
-    const int m = 1000;        // количество разбиений для метода прямоугольников
+    const int n = 5;          // количество элементов разбиения
+    const int m = 10;        // количество разбиений для метода прямоугольников
 
     HANDLE hThread[n];
     DWORD dwThreadID[n];

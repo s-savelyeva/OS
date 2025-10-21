@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #include <iostream>
 #include <string>
 #include <locale>
@@ -27,10 +27,12 @@ DWORD WINAPI func(LPVOID param)
     for (int s = 0; thread_id + k * s < text.size(); s++)
     {
         int char_index = thread_id + k * s;
-        EnterCriticalSection(&cs);
-        sum += (int)text[char_index];
-        LeaveCriticalSection(&cs);
+        local_sum += (int)text[char_index];
     }
+
+    EnterCriticalSection(&cs);
+    sum += local_sum;
+    LeaveCriticalSection(&cs);
 
     return 0;
 }

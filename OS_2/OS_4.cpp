@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #include <iostream>
 #include <time.h>
 #include <locale>
@@ -12,8 +12,7 @@ CRITICAL_SECTION cs;
 deque<string> deq;
 
 struct ThreadData {
-    string* elements;
-    int count;
+    string value;
 };
 
 DWORD WINAPI push_deque(LPVOID param) {
@@ -21,17 +20,15 @@ DWORD WINAPI push_deque(LPVOID param) {
     ThreadData* data = (ThreadData*)param;
     srand(time(NULL));
 
-    for (int i = 0; i < data->count; i++) {
-        if (rand() % 2 == 0) {
-            EnterCriticalSection(&cs);
-            deq.push_front(data->elements[i]);
-            LeaveCriticalSection(&cs);
-        }
-        else {
-            EnterCriticalSection(&cs);
-            deq.push_back(data->elements[i]);
-            LeaveCriticalSection(&cs);
-        }
+    if (rand() % 2 == 0) {
+        EnterCriticalSection(&cs);
+        deq.push_front(data->value);
+        LeaveCriticalSection(&cs);
+    }
+    else {
+        EnterCriticalSection(&cs);
+        deq.push_back(data->value);
+        LeaveCriticalSection(&cs);
     }
 
     return 0;
@@ -41,56 +38,25 @@ int main() {
 
     setlocale(LC_ALL, "rus");
 
-    const int n = 5;
-    HANDLE hThread[n];	 //массив потоков
-    DWORD dwThreadID[n]; //массив идентификаторов
-
     ifstream file("file.txt");
     string line;
 
-    // Считаем количество элементов в файле
-    int total_elements = 0;
-    while (getline(file, line)) {
-        if (!line.empty()) total_elements++;
-    }
+    vector<string> values;
+    string x;
+    while (file >> x)
+        values.push_back(x);
     file.close();
 
-    // Читаем элементы в массив
-    string* elements = new string[total_elements];
-    file.open("file.txt");
-    int index = 0;
-    while (getline(file, line)) {
-        if (!line.empty()) elements[index++] = line;
-    }
-    file.close();
-
-    // Распределяем элементы между n потоками
-    ThreadData* threadData = new ThreadData[n];
-    int* elements_per_thread = new int[n](); // Инициализируем нулями
-
-    // Считаем сколько элементов будет у каждого потока
-    for (int i = 0; i < total_elements; i++) {
-        elements_per_thread[i % n]++;
-    }
-
-    // Выделяем память для элементов каждого потока
-    for (int i = 0; i < n; i++) {
-        threadData[i].elements = new string[elements_per_thread[i]];
-        threadData[i].count = elements_per_thread[i];
-    }
-
-    // Заполняем массивы элементов для потоков
-    int* current_index = new int[n]();
-    for (int i = 0; i < total_elements; i++) {
-        int thread_idx = i % n;
-        threadData[thread_idx].elements[current_index[thread_idx]++] = elements[i];
-    }
+    int n = (int)values.size();
+    HANDLE* hThread = new HANDLE[n];	 //массив потоков
+    DWORD* dwThreadID = new DWORD[n]; //массив идентификаторов
 
     InitializeCriticalSection(&cs);
 
     for (int i = 0; i < n; i++) {
+        ThreadData* data = new ThreadData{ values[i] };
 
-        hThread[i] = CreateThread(NULL, 0, push_deque, &threadData[i], 0, &dwThreadID[i]);
+        hThread[i] = CreateThread(NULL, 0, push_deque, data, 0, &dwThreadID[i]);
 
         if (hThread[i] == NULL) {
             cout << "Ошибка создания потока " << GetLastError() << '\n';

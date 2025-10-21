@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #include <iostream>
 #include <ctime>
 #include <locale>
@@ -29,23 +29,22 @@ DWORD WINAPI fill_mtx(LPVOID param) {
 DWORD WINAPI find_sum(LPVOID param) {
     int* prow_num = (int*)param;
     int row_num = *prow_num;
+    float local_sum = 0;
 
     // Ждем, пока строка будет сформирована
     bool ready = false;
     while (!ready) {
-        EnterCriticalSection(&cs);  // Добавляем синхронизацию для чтения флага
         ready = row_ready[row_num];
-        LeaveCriticalSection(&cs);
-        if (!ready) {
-            Sleep(1); // небольшая пауза
-        }
     }
 
     for (int i = 0; i < n; i++) {
-        EnterCriticalSection(&cs);
-        sum += mtx[row_num][i];
-        LeaveCriticalSection(&cs);
+        local_sum += mtx[row_num][i];
     }
+
+    EnterCriticalSection(&cs);
+    sum += local_sum;
+    LeaveCriticalSection(&cs);
+
     return 0;
 }
 
